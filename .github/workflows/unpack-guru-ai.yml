@@ -1,0 +1,39 @@
+name: Prepare Guru AI source
+
+on:
+  push:
+    branches: ["update/custom-subject-support"]
+
+permissions:
+  contents: write
+
+jobs:
+  unpack:
+    if: contains(github.event.head_commit.message, '[prepare-guru-source]')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unpack existing project archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/guru-src
+          mkdir -p /tmp/guru-src
+          curl -fsSL -o /tmp/guru.zip https://raw.githubusercontent.com/${{ github.repository }}/main/bantu-beres-guru-ai-fixed.zip
+          unzip -q /tmp/guru.zip -d /tmp/guru-src
+          root=$(find /tmp/guru-src -mindepth 1 -maxdepth 1 -type d | head -n1)
+          test -n "$root"
+          shopt -s dotglob
+          cp -R "$root"/* .
+          rm -rf /tmp/guru-src /tmp/guru.zip
+          rm -f bantu-beres-guru-ai-fixed.zip
+          rm -f .github/workflows/unpack-guru-ai.yml
+      - name: Commit extracted source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Prepare Guru AI source for safe feature update [skip ci]"
+          git push
